@@ -165,9 +165,23 @@ def video_detection(request):
             
             # Get current timestamp when video is uploaded/selected
             upload_datetime = timezone.now().strftime('%Y-%m-%d %H:%M:%S')
+
+            # Optional manual base datetime for video
+            manual_dt_str = request.POST.get('video_base_datetime')  # HTML datetime-local
+            base_datetime = None
+            if manual_dt_str:
+                try:
+                    # datetime-local format: YYYY-MM-DDTHH:MM
+                    from datetime import datetime
+                    naive = datetime.fromisoformat(manual_dt_str)
+                    base_datetime = timezone.make_aware(naive, timezone.get_current_timezone())
+                except Exception:
+                    base_datetime = timezone.now()
+            else:
+                base_datetime = timezone.now()
             
             # Get video metadata with upload date based on selection/upload time
-            video_info = get_video_info(str(input_path), upload_date=upload_datetime)
+            video_info = get_video_info(str(input_path), upload_date=base_datetime.strftime('%Y-%m-%d %H:%M:%S'))
             
             # Create media directory if it doesn't exist (needed for outputs even with existing videos)
             media_root = Path(settings.MEDIA_ROOT)
@@ -234,6 +248,37 @@ def video_detection(request):
                 sys.stdout.flush()  # Ensure output is visible immediately
                 
                 save_video = request.POST.get('save_video') == 'on'
+                # Incremental DB save callback for each detection row
+                def _on_detection_save(det_row: dict):
+                    try:
+                        from datetime import timedelta
+                        frame_num_val = int(det_row.get('frame', 0))
+                        det_time = video_base_datetime + timedelta(seconds=(frame_num_val / float(fps_for_time)))
+                        bbox = det_row.get('bbox', [0, 0, 0, 0])
+                        detection = BirdDetection(
+                            category=det_row.get('class_name', 'unknown'),
+                            confidence=float(det_row.get('confidence', 0.0)),
+                            frame_number=frame_num_val,
+                            video_file=input_filename,
+                            video_upload_date=video_base_datetime,
+                            detection_time=det_time,
+                            bbox_x1=float(bbox[0]) if len(bbox) > 0 else 0.0,
+                            bbox_y1=float(bbox[1]) if len(bbox) > 1 else 0.0,
+                            bbox_x2=float(bbox[2]) if len(bbox) > 2 else 0.0,
+                            bbox_y2=float(bbox[3]) if len(bbox) > 3 else 0.0,
+                        )
+                        # Attach frame image if available
+                        img_path = det_row.get('image_path')
+                        if img_path and os.path.exists(img_path):
+                            from django.core.files import File as _File
+                            frame_filename = os.path.basename(img_path)
+                            with open(img_path, 'rb') as imgf:
+                                detection.frame_image.save(frame_filename, _File(imgf), save=False)
+                        detection.save()
+                    except Exception:
+                        # Avoid breaking the main flow if a single row fails
+                        pass
+
                 results = run_video_inference_script(
                     source_path=str(input_path),
                     output_path=str(output_path),  # Will be ignored if save_only_detection_frames=True
@@ -243,7 +288,8 @@ def video_detection(request):
                     csv_output_path=str(csv_path),
                     frames_output_dir=str(frames_dir),
                     verbose=True,
-                    save_only_detection_frames=not save_video  # If not saving video, only frames
+                    save_only_detection_frames=not save_video,  # If not saving video, only frames
+                    on_detection=_on_detection_save
                 )
                 
                 # Save detections to database with frame images
@@ -251,17 +297,21 @@ def video_detection(request):
                 from django.utils.dateparse import parse_datetime
                 import os
                 
-                # Helper function to get video upload datetime
-                def get_video_upload_datetime():
+                # Choose base datetime for detection timestamps
+                def get_video_base_datetime():
+                    if manual_dt_str:
+                        return base_datetime
                     if video_info.get('upload_date'):
                         try:
                             dt = parse_datetime(video_info['upload_date'])
-                            return dt if dt else timezone.now()
-                        except:
-                            return timezone.now()
+                            if dt:
+                                return dt
+                        except Exception:
+                            pass
                     return timezone.now()
                 
-                video_upload_datetime = get_video_upload_datetime()
+                video_base_datetime = get_video_base_datetime()
+                fps_for_time = results.get('actual_fps') or video_info.get('fps') or 30.0
                 
                 frame_images_list = results.get('frame_images', [])
                 detection_list = results.get('detection_list', [])  # All detections from CSV
@@ -295,12 +345,19 @@ def video_detection(request):
                                     confidence=float(frame_data.get('confidence', 0.0)),
                                     frame_number=int(frame_data.get('frame_number', 0)),
                                     video_file=input_filename,
-                                    video_upload_date=video_upload_datetime,
+                                    video_upload_date=video_base_datetime,
                                     bbox_x1=float(bbox[0]) if len(bbox) > 0 else 0.0,
                                     bbox_y1=float(bbox[1]) if len(bbox) > 1 else 0.0,
                                     bbox_x2=float(bbox[2]) if len(bbox) > 2 else 0.0,
                                     bbox_y2=float(bbox[3]) if len(bbox) > 3 else 0.0,
                                 )
+                                # detection_time = base + offset by frame time
+                                try:
+                                    from datetime import timedelta
+                                    frame_num_val = int(frame_data.get('frame_number', 0))
+                                    detection.detection_time = video_base_datetime + timedelta(seconds=(frame_num_val / float(fps_for_time)))
+                                except Exception:
+                                    detection.detection_time = video_base_datetime
                                 # Save frame image
                                 frame_filename = os.path.basename(image_path)
                                 with open(image_path, 'rb') as img_file:
@@ -336,12 +393,16 @@ def video_detection(request):
                             continue
                         
                         try:
+                            from datetime import timedelta
+                            frame_num_val = int(det.get('frame', 0))
+                            det_time = video_base_datetime + timedelta(seconds=(frame_num_val / float(fps_for_time)))
                             BirdDetection.objects.create(
                                 category=det.get('class_name', 'unknown'),
                                 confidence=float(det.get('confidence', 0.0)),
                                 frame_number=int(det.get('frame', 0)),
                                 video_file=input_filename,
-                                video_upload_date=video_upload_datetime,
+                                video_upload_date=video_base_datetime,
+                                detection_time=det_time,
                                 bbox_x1=float(det.get('bbox', [0])[0]) if len(det.get('bbox', [])) > 0 else 0.0,
                                 bbox_y1=float(det.get('bbox', [0])[1]) if len(det.get('bbox', [])) > 1 else 0.0,
                                 bbox_x2=float(det.get('bbox', [0])[2]) if len(det.get('bbox', [])) > 2 else 0.0,
@@ -368,7 +429,8 @@ def video_detection(request):
                                     category=class_name,
                                     confidence=results.get('avg_confidences', {}).get(class_name, 0.0),
                                     video_file=input_filename,
-                                    video_upload_date=video_upload_datetime
+                                    video_upload_date=video_base_datetime,
+                                    detection_time=video_base_datetime
                                 )
                                 saved_to_db += 1
                             except Exception as e:

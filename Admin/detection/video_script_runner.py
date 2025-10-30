@@ -7,7 +7,7 @@ import sys
 import threading
 import time
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Callable, Optional
 from django.utils import timezone
 import cv2
 
@@ -20,7 +20,8 @@ def run_video_inference_script(
     csv_output_path: str = None,
     frames_output_dir: str = None,
     verbose: bool = True,
-    save_only_detection_frames: bool = True
+    save_only_detection_frames: bool = True,
+    on_detection: Optional[Callable[[Dict[str, Any]], None]] = None
 ) -> Dict[str, Any]:
     """
     Run video_inference.py script via subprocess.
@@ -358,6 +359,24 @@ def run_video_inference_script(
                                 frame_path = frames_dir / frame_filename
                                 if cv2.imwrite(str(frame_path), _frame):
                                     frames_saved_live.add(frame_num)
+                                # Fire incremental callback with raw row info
+                                if on_detection is not None:
+                                    try:
+                                        det_payload = {
+                                            'frame': frame_num,
+                                            'class_name': class_name,
+                                            'confidence': float(row.get('confidence', 0.0)),
+                                            'bbox': [
+                                                float(row.get('x1', 0)),
+                                                float(row.get('y1', 0)),
+                                                float(row.get('x2', 0)),
+                                                float(row.get('y2', 0)),
+                                            ],
+                                            'image_path': str(frame_path) if frame_num in frames_saved_live else None,
+                                        }
+                                        on_detection(det_payload)
+                                    except Exception:
+                                        pass
                             except Exception as _inner_e:
                                 # Skip faulty row
                                 pass

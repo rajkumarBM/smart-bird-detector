@@ -64,12 +64,12 @@ def get_video_fps(source: str) -> float:
     """Return FPS for video path or default 30 for camera streams."""
     try:
         int(source)
-        return 30.0
+        return 10.0
     except Exception:
         cap = cv2.VideoCapture(source)
         if not cap.isOpened():
-            return 30.0
-        fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
+            return 10.0
+        fps = cap.get(cv2.CAP_PROP_FPS) or 10.0
         cap.release()
         return float(fps)
 
