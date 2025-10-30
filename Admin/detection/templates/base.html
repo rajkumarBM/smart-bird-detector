@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Bird Detector{% endblock %}</title>
+    {% block extra_css %}{% endblock %}
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+        }
+        .header {
+            background: #667eea;
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .header h1 {
+            font-size: 24px;
+        }
+        .header-nav {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        .nav-link:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        .nav-link.active {
+            background: rgba(255,255,255,0.3);
+        }
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 8px 15px;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        .container {
+            width: 100%;
+            padding: 20px;
+        }
+        {% block page_styles %}{% endblock %}
+    </style>
+</head>
+<body>
+    {% block header %}
+    {% if user.is_authenticated %}
+    <div class="header">
+        <h1>Bird Detection System</h1>
+        <div class="header-nav">
+            <a href="{% url 'dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Dashboard</a>
+            <a href="{% url 'video_detection' %}" class="nav-link {% if request.resolver_match.url_name == 'video_detection' %}active{% endif %}">Video Detection</a>
+            <a href="{% url 'detection_list' %}" class="nav-link {% if request.resolver_match.url_name == 'detection_list' %}active{% endif %}">Detections</a>
+            <a href="{% url 'admin:index' %}" class="nav-link" target="_blank">Admin Panel</a>
+            <a href="{% url 'logout' %}" class="logout-btn">Logout</a>
+        </div>
+    </div>
+    {% endif %}
+    {% endblock %}
+    
+    {% block content %}{% endblock %}
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
+

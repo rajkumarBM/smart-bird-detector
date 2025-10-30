@@ -1,0 +1,731 @@
+{% extends 'base.html' %}
+
+{% block title %}Video Detection - Bird Detector{% endblock %}
+
+{% block page_styles %}
+.video-detection-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 30px;
+}
+
+.upload-card {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 30px;
+}
+
+.upload-card h2 {
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 24px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #555;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.form-group input[type="file"] {
+    width: 100%;
+    padding: 12px;
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    background: #f9f9f9;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.form-group input[type="file"]:hover {
+    border-color: #667eea;
+    background: #f0f0f0;
+}
+
+.device-selection {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.device-option {
+    flex: 1;
+    min-width: 150px;
+}
+
+.device-option input[type="radio"] {
+    display: none;
+}
+
+.device-option label {
+    display: block;
+    padding: 15px 20px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    background: white;
+    font-weight: 500;
+}
+
+.device-option input[type="radio"]:checked + label {
+    border-color: #667eea;
+    background: #667eea;
+    color: white;
+}
+
+.device-option label:hover {
+    border-color: #667eea;
+}
+
+.conf-slider {
+    width: 100%;
+    height: 8px;
+    border-radius: 5px;
+    background: #ddd;
+    outline: none;
+    -webkit-appearance: none;
+}
+
+.conf-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #667eea;
+    cursor: pointer;
+}
+
+.conf-slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #667eea;
+    cursor: pointer;
+    border: none;
+}
+
+.conf-value {
+    display: inline-block;
+    margin-left: 10px;
+    font-weight: bold;
+    color: #667eea;
+    min-width: 40px;
+}
+
+.submit-btn {
+    background: #667eea;
+    color: white;
+    padding: 15px 40px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s;
+    width: 100%;
+}
+
+.submit-btn:hover {
+    background: #5568d3;
+}
+
+.submit-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.results-card {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-top: 30px;
+}
+
+.results-card h3 {
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 20px;
+}
+
+.result-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.result-item:last-child {
+    border-bottom: none;
+}
+
+.result-label {
+    color: #666;
+    font-weight: 500;
+}
+
+.result-value {
+    color: #333;
+    font-weight: 600;
+}
+
+.video-preview {
+    margin-top: 20px;
+}
+
+.video-preview video {
+    width: 100%;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.download-links {
+    margin-top: 20px;
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.download-link {
+    background: #667eea;
+    color: white;
+    padding: 10px 20px;
+    text-decoration: none;
+    border-radius: 6px;
+    transition: background 0.3s;
+}
+
+.download-link:hover {
+    background: #5568d3;
+}
+
+.detections-list {
+    margin-top: 20px;
+}
+
+.detection-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.detection-item:last-child {
+    border-bottom: none;
+}
+
+.loading {
+    display: none;
+    text-align: center;
+    padding: 20px;
+    color: #667eea;
+    font-weight: 600;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    z-index: 1000;
+    min-width: 400px;
+    max-width: 600px;
+}
+
+.loading.show {
+    display: block;
+}
+
+.spinner {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #667eea;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 10px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="video-detection-container">
+        <div class="upload-card">
+            <h2>Video Bird Detection</h2>
+            
+            {% if messages %}
+            <div style="margin-bottom: 20px;">
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}" style="padding: 12px; border-radius: 6px; margin-bottom: 10px; 
+                    {% if message.tags == 'error' %}background: #fee; border-left: 4px solid #f00; color: #c00;
+                    {% elif message.tags == 'success' %}background: #efe; border-left: 4px solid #0a0; color: #060;
+                    {% else %}background: #eef; border-left: 4px solid #06a; color: #006;
+                    {% endif %}">
+                    <strong>{% if message.tags == 'error' %}⚠️ Error: {% elif message.tags == 'success' %}✓ Success: {% else %}ℹ️ Info: {% endif %}</strong>{{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            {% if error %}
+            <div style="margin-bottom: 20px; padding: 15px; background: #fee; border-radius: 8px; border-left: 4px solid #f00;">
+                <h4 style="color: #c00; margin-top: 0;">⚠️ Detection Error</h4>
+                <p style="color: #c00; margin-bottom: 0; white-space: pre-wrap; font-family: monospace; font-size: 12px;">{{ error }}</p>
+            </div>
+            {% endif %}
+            <form method="POST" enctype="multipart/form-data" id="detectionForm">
+                {% csrf_token %}
+                
+                <!-- Video Source Selection: Upload or Existing -->
+                <div class="form-group">
+                    <label>Video Source</label>
+                    <div class="device-selection" style="margin-bottom: 15px;">
+                        <div class="device-option">
+                            <input type="radio" name="video_source_type" id="source_upload" value="upload" checked>
+                            <label for="source_upload">Upload New Video</label>
+                        </div>
+                        <div class="device-option">
+                            <input type="radio" name="video_source_type" id="source_existing" value="existing">
+                            <label for="source_existing">Use Existing Video</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Upload Section -->
+                <div class="form-group" id="upload_section">
+                    <label for="video_file">Select Video File to Upload</label>
+                    <input type="file" name="video_file" id="video_file" accept="video/*">
+                    <small style="color: #666; margin-top: 5px; display: block;">
+                        Supported formats: MP4, AVI, MOV, MKV, FLV, WMV
+                    </small>
+                    
+                    <!-- Video Preview -->
+                    <div id="videoPreview" style="display: none; margin-top: 15px;">
+                        <label style="margin-bottom: 10px; display: block; color: #555; font-weight: 600;">Video Preview:</label>
+                        <video id="previewPlayer" controls style="width: 100%; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-height: 400px;">
+                            Your browser does not support the video tag.
+                        </video>
+                        
+                        <!-- Video Metadata -->
+                        <div id="videoMetadata" style="margin-top: 15px; padding: 15px; background: #f9f9f9; border-radius: 8px; display: none;">
+                            <h4 style="margin-bottom: 10px; color: #333; font-size: 14px;">Video Information:</h4>
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; font-size: 13px;">
+                                <div><strong>File Name:</strong> <span id="metaFileName">-</span></div>
+                                <div><strong>File Size:</strong> <span id="metaFileSize">-</span></div>
+                                <div><strong>Duration:</strong> <span id="metaDuration">-</span></div>
+                                <div><strong>Resolution:</strong> <span id="metaResolution">-</span></div>
+                                <div><strong>FPS:</strong> <span id="metaFPS">-</span></div>
+                                <div><strong>Codec:</strong> <span id="metaCodec">-</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Existing Video Selection Section -->
+                <div class="form-group" id="existing_section" style="display: none;">
+                    <label for="existing_video_path">Select Existing Video</label>
+                    <select name="existing_video_path" id="existing_video_path" class="form-control" style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; background: white;">
+                        <option value="">-- Select a video --</option>
+                        {% for video in available_videos %}
+                        <option value="{{ video.path }}">{{ video.name }} ({{ video.size|floatformat:2 }} MB)</option>
+                        {% endfor %}
+                    </select>
+                    <small style="color: #666; margin-top: 5px; display: block;">
+                        Videos from sample-video directory (for testing)
+                    </small>
+                    
+                    <!-- Preview for existing video -->
+                    <div id="existingVideoPreview" style="display: none; margin-top: 15px;">
+                        <label style="margin-bottom: 10px; display: block; color: #555; font-weight: 600;">Video Preview:</label>
+                        <video id="existingPreviewPlayer" controls style="width: 100%; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-height: 400px;">
+                            Your browser does not support the video tag.
+                        </video>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Select Device</label>
+                    <div class="device-selection">
+                        <div class="device-option">
+                            <input type="radio" name="device" id="device_cpu" value="cpu" checked>
+                            <label for="device_cpu">CPU</label>
+                        </div>
+                        <div class="device-option">
+                            <input type="radio" name="device" id="device_gpu" value="gpu">
+                            <label for="device_gpu">GPU (CUDA)</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Output Options</label>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <input type="checkbox" id="save_video" name="save_video">
+                        <label for="save_video" style="margin:0; font-weight:500; color:#444;">Save annotated video (MP4)</label>
+                    </div>
+                    <small style="color:#666; display:block; margin-top:6px;">Unchecked = save detection frames only (faster, smaller). Checked = also create annotated video.</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="conf_threshold">
+                        Confidence Threshold
+                        <span class="conf-value" id="conf_display">0.7</span>
+                    </label>
+                    <input type="range" name="conf_threshold" id="conf_threshold" 
+                           class="conf-slider" min="0.1" max="1.0" step="0.05" value="0.7">
+                </div>
+                
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    Run Detection
+                </button>
+            </form>
+            
+            <div class="loading" id="loading" style="display: none;">
+                <div class="spinner"></div>
+                <p style="margin-bottom: 10px;">Processing video... This may take a few minutes. Please wait.</p>
+                <div id="progressInfo" style="margin-top: 15px; font-size: 14px; color: #667eea;">
+                    <div id="statusMessage" style="font-weight: 600;">Starting detection...</div>
+                    <div id="timeElapsed" style="margin-top: 5px; font-size: 12px; color: #999;">Time elapsed: 0 seconds</div>
+                    <div style="margin-top: 10px; font-size: 11px; color: #888; font-style: italic;">
+                        Note: Do not close this page. Processing will continue even if you navigate away.
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        {% if success %}
+        <div class="results-card">
+            <h3>Detection Results</h3>
+            
+            {% if video_info %}
+            <div style="margin-bottom: 20px; padding: 15px; background: #f0f4ff; border-radius: 8px; border-left: 4px solid #667eea;">
+                <h4 style="margin-bottom: 10px; color: #333; font-size: 16px;">Video Information:</h4>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; font-size: 13px;">
+                    <div><strong>File Name:</strong> {{ video_info.file_name }}</div>
+                    <div><strong>File Size:</strong> {{ video_info.file_size_mb }} MB</div>
+                    <div><strong>Duration:</strong> {{ video_info.duration_formatted }}</div>
+                    <div><strong>Resolution:</strong> {{ video_info.width }}x{{ video_info.height }}</div>
+                    <div><strong>FPS:</strong> {{ video_info.fps|floatformat:2 }}</div>
+                    <div><strong>Total Frames:</strong> {{ video_info.frame_count }}</div>
+                    {% if video_info.upload_date %}
+                    <div><strong>Video Upload Date:</strong> {{ video_info.upload_date }}</div>
+                    {% elif video_info.file_date %}
+                    <div><strong>Video Date:</strong> {{ video_info.file_date }}</div>
+                    {% endif %}
+                    {% if video_info.codec %}
+                    <div><strong>Codec:</strong> {{ video_info.codec }}</div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="result-item">
+                <span class="result-label">Device Used:</span>
+                <span class="result-value">{{ device_used|upper }}</span>
+            </div>
+            
+            <div class="result-item">
+                <span class="result-label">Precision:</span>
+                <span class="result-value">{{ precision }}</span>
+            </div>
+            
+            {% if results %}
+            <div class="result-item">
+                <span class="result-label">Processed Frames:</span>
+                <span class="result-value">{{ results.processed_frames }}</span>
+            </div>
+            
+            <div class="result-item">
+                <span class="result-label">Total Time:</span>
+                <span class="result-value">{{ results.total_time|floatformat:2 }} seconds</span>
+            </div>
+            
+            <div class="result-item">
+                <span class="result-label">Processing Speed:</span>
+                <span class="result-value">{{ results.actual_fps|floatformat:2 }} FPS</span>
+            </div>
+            
+            <div class="result-item">
+                <span class="result-label">Total Detections:</span>
+                <span class="result-value">{{ results.total_detections }}</span>
+            </div>
+            
+            {% if results.detections %}
+            <div class="detections-list">
+                <h4 style="margin-top: 20px; margin-bottom: 15px; color: #333;">Detection Summary by Class:</h4>
+                {% for class_name, count in results.detections.items %}
+                <div class="detection-item">
+                    <span class="result-label">{{ class_name|title }}:</span>
+                    <span class="result-value">{{ count }} detections
+                        {% if results.avg_confidences %}
+                            {% for cls, conf in results.avg_confidences.items %}
+                                {% if cls == class_name %}
+                                (avg conf: {{ conf|floatformat:2 }})
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endif %}
+            
+            {% if output_video_url %}
+            <div class="video-preview">
+                <h4 style="margin-bottom: 10px; color: #333;">Output Video:</h4>
+                <video controls>
+                    <source src="{{ output_video_url }}" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+            {% else %}
+            <div style="padding: 15px; background: #e8f5e9; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #4caf50;">
+                <p style="color: #2e7d32; font-weight: 600; margin: 0;">
+                    ✓ Detection Mode: Only frames with detected objects were saved as images (no full video output).
+                </p>
+                <p style="color: #555; font-size: 13px; margin-top: 5px; margin-bottom: 0;">
+                    This saves storage space and processing time. All detection frames are displayed below.
+                </p>
+            </div>
+            {% endif %}
+            
+            <div class="download-links">
+                {% if output_video_url %}
+                <a href="{{ output_video_url }}" class="download-link" download>Download Video</a>
+                {% endif %}
+                {% if csv_url %}
+                <a href="{{ csv_url }}" class="download-link" download>Download CSV</a>
+                {% endif %}
+            </div>
+            
+            {% if stored_detections %}
+            <div style="margin-top: 30px;">
+                <h4 style="margin-bottom: 15px; color: #333;">
+                    Detection Frame Images (Only frames with detected objects):
+                    <span style="font-size: 14px; color: #666; font-weight: normal;">
+                        ({{ stored_detections|length }} detection frames saved)
+                    </span>
+                </h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
+                    {% for detection in stored_detections %}
+                    <div style="background: #f9f9f9; padding: 10px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                        {% if detection.frame_image %}
+                        <img src="{{ detection.frame_image.url }}" alt="Frame {{ detection.frame_number }}" 
+                             style="width: 100%; border-radius: 5px; margin-bottom: 8px; cursor: pointer;"
+                             onclick="window.open('{{ detection.frame_image.url }}', '_blank')">
+                        {% endif %}
+                        <div style="font-size: 12px; color: #666;">
+                            <div><strong>{{ detection.category|title }}</strong></div>
+                            <div>Frame: {{ detection.frame_number }}</div>
+                            <div>Confidence: {{ detection.confidence|floatformat:2 }}</div>
+                            {% if detection.video_upload_date %}
+                            <div style="font-size: 11px; color: #999; margin-top: 5px;">
+                                Video Date: {{ detection.video_upload_date|date:"Y-m-d H:i" }}
+                            </div>
+                            {% endif %}
+                            {% if detection.bbox_x2 > 0 %}
+                            <div style="font-size: 11px; color: #999;">
+                                BBox: ({{ detection.bbox_x1|floatformat:0 }}, {{ detection.bbox_y1|floatformat:0 }}) - ({{ detection.bbox_x2|floatformat:0 }}, {{ detection.bbox_y2|floatformat:0 }})
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Update confidence display as slider changes
+    const confSlider = document.getElementById('conf_threshold');
+    const confDisplay = document.getElementById('conf_display');
+    
+    confSlider.addEventListener('input', function() {
+        confDisplay.textContent = parseFloat(this.value).toFixed(2);
+    });
+    
+    // Toggle between upload and existing video sections
+    const sourceUpload = document.getElementById('source_upload');
+    const sourceExisting = document.getElementById('source_existing');
+    const uploadSection = document.getElementById('upload_section');
+    const existingSection = document.getElementById('existing_section');
+    const videoFileInput = document.getElementById('video_file');
+    const existingVideoSelect = document.getElementById('existing_video_path');
+    
+    function toggleVideoSource() {
+        if (sourceUpload.checked) {
+            uploadSection.style.display = 'block';
+            existingSection.style.display = 'none';
+            videoFileInput.required = true;
+            existingVideoSelect.required = false;
+        } else {
+            uploadSection.style.display = 'none';
+            existingSection.style.display = 'block';
+            videoFileInput.required = false;
+            existingVideoSelect.required = true;
+        }
+    }
+    
+    sourceUpload.addEventListener('change', toggleVideoSource);
+    sourceExisting.addEventListener('change', toggleVideoSource);
+    toggleVideoSource(); // Initialize
+    
+    // Video preview functionality for uploads
+    const videoInput = document.getElementById('video_file');
+    const videoPreview = document.getElementById('videoPreview');
+    const previewPlayer = document.getElementById('previewPlayer');
+    const videoMetadata = document.getElementById('videoMetadata');
+    
+    videoInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file && file.type.startsWith('video/')) {
+            const url = URL.createObjectURL(file);
+            previewPlayer.src = url;
+            videoPreview.style.display = 'block';
+            
+            // Extract and display video metadata
+            displayVideoMetadata(file);
+            
+            // Get video metadata when loaded
+            previewPlayer.addEventListener('loadedmetadata', function() {
+                updateVideoMetadataFromPlayer(previewPlayer, file);
+            });
+        } else {
+            videoPreview.style.display = 'none';
+            videoMetadata.style.display = 'none';
+        }
+    });
+    
+    // Handle existing video selection preview
+    const existingVideoPreview = document.getElementById('existingVideoPreview');
+    const existingPreviewPlayer = document.getElementById('existingPreviewPlayer');
+    
+    existingVideoSelect.addEventListener('change', function() {
+        const selectedPath = this.value;
+        if (selectedPath) {
+            // For security, we can't directly load local file paths in browser
+            // So we'll just show the selected video name
+            const selectedOption = this.options[this.selectedIndex];
+            const videoName = selectedOption.text.split(' (')[0];
+            existingVideoPreview.style.display = 'block';
+            // Note: Can't preview local file paths directly, but user can test the detection
+            existingVideoPreview.innerHTML = `
+                <p style="padding: 10px; background: #e8f5e9; border-radius: 5px; color: #2e7d32;">
+                    ✓ Selected: <strong>${videoName}</strong>
+                </p>
+            `;
+        } else {
+            existingVideoPreview.style.display = 'none';
+        }
+    });
+    
+    function displayVideoMetadata(file) {
+        // File metadata
+        document.getElementById('metaFileName').textContent = file.name;
+        const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+        document.getElementById('metaFileSize').textContent = fileSizeMB + ' MB';
+        videoMetadata.style.display = 'block';
+    }
+    
+    function updateVideoMetadataFromPlayer(player, file) {
+        if (player.readyState >= 2) {
+            const duration = player.duration || 0;
+            const minutes = Math.floor(duration / 60);
+            const seconds = Math.floor(duration % 60);
+            document.getElementById('metaDuration').textContent = minutes + ':' + (seconds < 10 ? '0' : '') + seconds;
+            document.getElementById('metaResolution').textContent = player.videoWidth + 'x' + player.videoHeight;
+            // FPS is not directly available via HTML5 video, show as "Unknown" or try to estimate
+            document.getElementById('metaFPS').textContent = '~30 (estimated)';
+        }
+    }
+    
+    // Show loading state on form submit
+    const form = document.getElementById('detectionForm');
+    const loading = document.getElementById('loading');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    let startTime = null;
+    let progressInterval = null;
+    
+    function updateProgress() {
+        if (startTime) {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            document.getElementById('timeElapsed').textContent = 
+                `Time elapsed: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+    }
+    
+    form.addEventListener('submit', function(e) {
+        // Show loading overlay immediately when button is clicked
+        loading.style.display = 'block';
+        loading.classList.add('show');
+        
+        // Disable button and change text
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Processing...';
+        
+        // Initialize progress info
+        document.getElementById('statusMessage').textContent = 'Starting detection... Please wait.';
+        document.getElementById('timeElapsed').textContent = 'Time elapsed: 0 seconds';
+        
+        // Start timer
+        startTime = Date.now();
+        
+        // Update progress every second
+        progressInterval = setInterval(updateProgress, 1000);
+        
+        // Update status messages to reflect actual detection stages
+        const statusMessages = [
+            'Uploading video and preparing...',
+            'Initializing detection system...',
+            'Loading AI model (this may take 10-30 seconds)...',
+            'Processing video frames...',
+            'Detecting objects in frames...',
+            'Generating annotated output video...',
+            'Saving results and frame images...',
+            'Finalizing detection...'
+        ];
+        let msgIndex = 0;
+        const statusInterval = setInterval(function() {
+            if (msgIndex < statusMessages.length) {
+                document.getElementById('statusMessage').textContent = statusMessages[msgIndex];
+                msgIndex++;
+            }
+        }, 10000); // Change message every 10 seconds to match processing stages
+        
+        // Cleanup interval when page unloads (in case of navigation)
+        window.addEventListener('beforeunload', function() {
+            if (progressInterval) clearInterval(progressInterval);
+            if (statusInterval) clearInterval(statusInterval);
+        });
+        
+        // Form will submit and page will reload when processing completes
+    });
+</script>
+{% endblock %}
+

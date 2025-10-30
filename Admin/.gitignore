@@ -1,0 +1,115 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+/media
+/staticfiles
+
+# ENV files
+.env
+.env.*
+
+# Virtual environments (project-specific)
+ai-env/
+*/ai-env/
+detection/env/
+*/env/
+
+# Django migrations (keep __init__.py only)
+detection/migrations/*.py
+!detection/migrations/__init__.py
+
+# Large binaries: videos, audio, images (generated/test assets)
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
+*.mp3
+*.wav
+*.flac
+*.m4a
+*.aac
+*.ogg
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.tiff
+*.webp
+
+# Model weights and engines
+*.pt
+*.engine
+*.onnx
+
+# Generated outputs and runs
+/navy_birds-main/output-video/
+/navy_birds-main/runs/
+/navy_birds-main/*.mp4
+/navy_birds-main/*.csv
+/navy_birds-main/*.jpg
+/navy_birds-main/*.png
+/navy_birds-main/sample-video/*.mp4
+
+# App media outputs (uploads, detection frames, csv)
+/media/uploads/
+/media/outputs/
+/media/detections/frames/
+
+# CSV logs/exports
+*.csv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+detection/management/__init__.py
+detection/management/commands/__init__.py
+detection/__init__.py
+birddetector/asgi.py
+birddetector/__init__.py
+navy_birds-main/.claude/settings.local.json
+navy_birds-main/ai-env/bin/activate.csh
+navy_birds-main/ai-env/bin/activate.fish
+/navy_birds-main/runs/detect/predict
+navy_birds-main/runs/detect/predict2/Pasted image.jpg
+navy_birds-main/runs/detect/predict3/Pasted image.jpg
+navy_birds-main/runs/detect/predict4/Pasted image.jpg
+navy_birds-main/runs/detect/predict5/Pasted image.jpg
+navy_birds-main/runs/detect/predict7/Pasted image.jpg
+navy_birds-main/runs/detect/predict6/Pasted image.jpg

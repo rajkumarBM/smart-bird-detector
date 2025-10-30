@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Bird Detector{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block page_styles %}
+.stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+.stat-card {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+.stat-card h3 {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+.stat-card .value {
+    color: #667eea;
+    font-size: 32px;
+    font-weight: bold;
+}
+.charts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+.chart-card {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+.chart-card h2 {
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 18px;
+}
+canvas {
+    max-height: 400px;
+}
+@media (max-width: 768px) {
+    .charts {
+        grid-template-columns: 1fr;
+    }
+}
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="stats">
+        <div class="stat-card">
+            <h3>Total Detections</h3>
+            <div class="value">{{ total_detections }}</div>
+        </div>
+        <div class="stat-card">
+            <h3>Today's Detections</h3>
+            <div class="value">{{ today_count }}</div>
+        </div>
+    </div>
+    
+    <div class="charts">
+        <div class="chart-card">
+            <h2>Detections by Date (Last 30 Days)</h2>
+            <canvas id="dateChart"></canvas>
+        </div>
+        
+        <div class="chart-card">
+            <h2>Detections by Category (Last 24 Hours)</h2>
+            <canvas id="categoryChart"></canvas>
+        </div>
+    </div>
+    
+    <div class="charts">
+        <div class="chart-card">
+            <h2>Detections by Time (Last 24 Hours)</h2>
+            <canvas id="timeChart"></canvas>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Date Chart
+    const dateCtx = document.getElementById('dateChart').getContext('2d');
+    const dateLabels = {{ date_labels|safe }};
+    const dateData = {{ date_counts|safe }};
+    new Chart(dateCtx, {
+        type: 'line',
+        data: {
+            labels: dateLabels,
+            datasets: [{
+                label: 'Detections',
+                data: dateData,
+                borderColor: '#667eea',
+                backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+    
+    // Category Chart
+    const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+    const categoryLabels = {{ categories|safe }};
+    const categoryData = {{ category_counts|safe }};
+    new Chart(categoryCtx, {
+        type: 'bar',
+        data: {
+            labels: categoryLabels,
+            datasets: [{
+                label: 'Detections',
+                data: categoryData,
+                backgroundColor: [
+                    '#667eea',
+                    '#764ba2',
+                    '#f093fb',
+                    '#4facfe',
+                    '#00f2fe'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+    
+    // Time Chart
+    const timeCtx = document.getElementById('timeChart').getContext('2d');
+    const timeLabels = {{ time_slots|safe }};
+    const timeData = {{ time_counts|safe }};
+    new Chart(timeCtx, {
+        type: 'bar',
+        data: {
+            labels: timeLabels,
+            datasets: [{
+                label: 'Detections',
+                data: timeData,
+                backgroundColor: '#764ba2',
+                borderColor: '#667eea',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}
